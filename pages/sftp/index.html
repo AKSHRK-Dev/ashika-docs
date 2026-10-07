@@ -43,7 +43,18 @@ sftp -P 2022 1a2bc34d@sftp.ashikanw.com
 <p>パスワードを聞かれたら APIキーを貼り付けます。</p>
 
 <h2 id="first-connect">初めてつなぐときの確認</h2>
-<p>初めてつなぐと、「ホスト鍵が不明です」「このサーバーを信頼しますか」と聞かれます。接続先が <code>sftp.ashikanw.com</code> で合っていれば、「OK」や「はい」で進んでください。2 回目からは聞かれません。</p>
+<p>初めてつなぐと、「ホスト鍵が不明です」「このサーバーを信頼しますか」と聞かれます。画面に出た鍵指紋が下の表のどれかと同じなら、本物の ASHIKA Network の SFTP です。「OK」や「はい」で進んでください。2 回目からは聞かれません。</p>
+<div class="table"><table class="params">
+<thead><tr><th>鍵の種類</th><th>鍵指紋</th></tr></thead>
+<tbody>
+<tr><td>ED25519</td><td><code>SHA256:LjXncsWCD3HEOM5Dew+TIZaL+FdiDDyoKKEzO8eCs0I</code><br><code>MD5:18:05:51:03:46:78:6d:2d:9d:eb:a3:e5:5b:a6:0e:ea</code></td></tr>
+<tr><td>RSA（3072 ビット）</td><td><code>SHA256:Wd166otiFyITGVHar3dKli1PITkd1SanbvKRR2/Lf9g</code><br><code>MD5:91:5c:47:53:c2:e0:b7:77:b9:c5:18:63:f8:a6:43:90</code></td></tr>
+</tbody></table></div>
+<p>どれとも違う鍵指紋が出たときは、つながずに <a href="https://link.ashikanw.com/discord">Discord</a> でお知らせください。</p>
+<p>あらかじめ <code>known_hosts</code> に登録しておきたいときは、次の行を使ってください。</p>
+```text
+[sftp.ashikanw.com]:2022 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFeFf4FWQf32NNBdWTQhJKWZrfuZBJH0yg2N3xZC2ViV
+```
 
 <h2 id="notes">気をつけること</h2>
 <ul>
