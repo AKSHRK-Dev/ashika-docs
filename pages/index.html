@@ -1,0 +1,28 @@
+<!-- title: ASHIKA Network ドキュメント -->
+<!-- description: ASHIKA Network の API と SFTP の使い方をまとめたドキュメントです。 -->
+<h1>ASHIKA Network ドキュメント</h1>
+<p class="lead">お客様パネルの画面の外から、サーバーを動かすための説明書です。プログラムから操作したいときは API を、たくさんのファイルを送りたいときは SFTP を使います。</p>
+
+<div class="cards">
+  <a class="card" href="/api/">
+    <span class="card-k">API</span>
+    <strong>プログラムからサーバーを操作する</strong>
+    <span>起動・停止・再起動、コマンドの送信、ファイルの読み書きを、HTTP で行えます。GitHub Actions からの自動デプロイなどに。</span>
+  </a>
+  <a class="card" href="/sftp/">
+    <span class="card-k">SFTP</span>
+    <strong>ソフトでファイルを送る</strong>
+    <span>FileZilla や WinSCP から、大きなファイルやフォルダをまとめて送れます。大きさの制限はディスクの上限だけです。</span>
+  </a>
+</div>
+
+<h2 id="key">どちらも APIキーで入ります</h2>
+<p>API と SFTP は、お客様パネルの <a href="https://dash.ashikanw.com/api-keys">「API」</a> で発行する APIキー（<code>ashk_</code> で始まる文字列）を使います。ログインのパスワードは使えません。</p>
+<ul>
+  <li>キーは 1 つのアカウントで 10 個まで作れます。使う場所ごとに分けておくと、1 つを消しても他に影響しません。</li>
+  <li>キーの全体が見られるのは、発行したときの 1 回だけです。なくしたら、消して作り直してください。</li>
+  <li>キーを消すと、そのキーはすぐに使えなくなります。</li>
+</ul>
+
+<h2 id="help">困ったときは</h2>
+<p>分からないことは <a href="https://link.ashikanw.com/discord">Discord</a> で聞いてください。障害やメンテナンスは <a href="https://status.ashikanw.com">稼働状況のページ</a> でお知らせします。</p>

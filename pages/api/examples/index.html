@@ -1,0 +1,115 @@
+<!-- title: 使い方の例 -->
+<!-- description: ASHIKA Network の API の使い方の例。GitHub Actions からの自動デプロイ、Python や Node.js からの操作。 -->
+<h1>使い方の例</h1>
+<p class="lead">よくある使い方を、そのまま使える形で載せています。<code>ASHIKA_API_KEY</code> と <code>SERVER_ID</code> は、自分の APIキーとサーバーの ID に置き換えてください。</p>
+
+<h2 id="deploy-shell">ファイルを送って再起動する（シェル）</h2>
+<p>手元の <code>main.py</code> をサーバーに送り、再起動します。</p>
+```bash
+export ASHIKA_API_KEY="ashk_..."
+SERVER_ID="1a2bc34d"
+API="https://api.ashikanw.com/v1/servers/$SERVER_ID"
+
+curl -fsS -X PUT "$API/files/contents?path=/main.py" \
+  -H "Authorization: Bearer $ASHIKA_API_KEY" \
+  --data-binary @main.py
+
+curl -fsS -X POST "$API/power" \
+  -H "Authorization: Bearer $ASHIKA_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"signal": "restart"}'
+```
+
+<h2 id="github-actions">GitHub に push したら自動で反映する</h2>
+<p>GitHub Actions で、push のたびにファイルを送って再起動します。リポジトリの Settings → Secrets and variables → Actions で、<code>ASHIKA_API_KEY</code> にキーを入れておきます。</p>
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy to ASHIKA Network
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      API: https://api.ashikanw.com/v1/servers/1a2bc34d
+      KEY: ${{ secrets.ASHIKA_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upload files
+        run: |
+          for f in main.py requirements.txt; do
+            curl -fsS -X PUT "$API/files/contents?path=/$f" \
+              -H "Authorization: Bearer $KEY" --data-binary @"$f"
+          done
+      - name: Restart
+        run: |
+          curl -fsS -X POST "$API/power" \
+            -H "Authorization: Bearer $KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"signal": "restart"}'
+```
+<p>送るファイルが多いときは、<code>git ls-files</code> の結果を 1 つずつ送るか、SFTP を使ってください。1 分間に 120 回までの制限があるので、ファイルが 100 を超えるときは SFTP のほうが向いています。</p>
+
+<h2 id="python">Python から状態を見る</h2>
+<p>標準ライブラリだけで書いた例です。動いていなければ起動します。</p>
+```python
+import json
+import os
+import urllib.request
+
+API = "https://api.ashikanw.com/v1"
+KEY = os.environ["ASHIKA_API_KEY"]
+SERVER_ID = "1a2bc34d"
+
+
+def call(method, path, body=None):
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(API + path, data=data, method=method)
+    req.add_header("Authorization", f"Bearer {KEY}")
+    if data is not None:
+        req.add_header("Content-Type", "application/json")
+    with urllib.request.urlopen(req) as res:
+        return json.load(res)["data"]
+
+
+server = call("GET", f"/servers/{SERVER_ID}")
+print(server["name"], server["status"])
+if server["status"] != "RUNNING":
+    print(call("POST", f"/servers/{SERVER_ID}/power", {"signal": "start"}))
+```
+
+<h2 id="node">Node.js からコマンドを送る</h2>
+<p>Node.js 18 以降なら、追加のパッケージは要りません。</p>
+```js
+const API = 'https://api.ashikanw.com/v1';
+const KEY = process.env.ASHIKA_API_KEY;
+const SERVER_ID = '1a2bc34d';
+
+async function call(method, path, body) {
+  const res = await fetch(API + path, {
+    method,
+    headers: {
+      Authorization: `Bearer ${KEY}`,
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(`${json.error.code}: ${json.error.message}`);
+  return json.data;
+}
+
+await call('POST', `/servers/${SERVER_ID}/command`, { command: 'say hello' });
+const { lines } = await call('GET', `/servers/${SERVER_ID}/logs?lines=5`);
+console.log(lines.join('\n'));
+```
+
+<h2 id="backup">ファイルを手元に取っておく</h2>
+<p>設定ファイルなどを、定期的に手元へダウンロードします。</p>
+```bash
+curl -fsS -o "config-$(date +%Y%m%d).json" \
+  "https://api.ashikanw.com/v1/servers/1a2bc34d/files/download?path=/config.json" \
+  -H "Authorization: Bearer $ASHIKA_API_KEY"
+```

@@ -1,0 +1,65 @@
+<!-- title: SFTP でつなぐ -->
+<!-- description: FileZilla や WinSCP などのソフトから、SFTP で ASHIKA Network のサーバーにファイルを送る方法。 -->
+<h1>SFTP でつなぐ</h1>
+<p class="lead">FileZilla・WinSCP・Cyberduck などのソフトから、サーバーのファイルを直接やりとりできます。パネルのファイル画面と違い、大きなファイルやフォルダをまとめて送れます。大きさの制限はディスクの上限だけです。</p>
+
+<h2 id="enable">1. SFTP をオンにする</h2>
+<p>SFTP は、初めはオフになっています。お客様パネルでサーバーを開き、<strong>「ファイル」</strong>の画面にある「SFTP で接続」の <strong>「SFTP をオンにする」</strong>を押してください。オンにしたサーバーにだけ入れます。</p>
+
+<h2 id="key">2. APIキーを用意する</h2>
+<p>SFTP のパスワードには、ログインのパスワードではなく <strong>APIキー</strong> を使います。パネルの <a href="https://dash.ashikanw.com/api-keys">「API」</a> で発行してください（<code>ashk_</code> で始まる文字列）。API で使うキーと同じものでも、SFTP 用に別に作ったものでも構いません。</p>
+
+<h2 id="settings">3. ソフトに接続先を入れる</h2>
+<div class="table"><table>
+<thead><tr><th>項目</th><th>入れるもの</th></tr></thead>
+<tbody>
+<tr><td>プロトコル</td><td>SFTP</td></tr>
+<tr><td>ホスト</td><td><code>sftp.ashikanw.com</code></td></tr>
+<tr><td>ポート</td><td><code>2022</code></td></tr>
+<tr><td>ユーザー名</td><td>サーバーの ID（8 文字。例: <code>1a2bc34d</code>）</td></tr>
+<tr><td>パスワード</td><td>APIキー（<code>ashk_…</code>）</td></tr>
+</tbody></table></div>
+<p>パネルの「SFTP で接続」に、自分のサーバーの値がそのまま出ています。コピーして使ってください。</p>
+
+<h3 id="filezilla">FileZilla</h3>
+<ol>
+  <li>「ファイル」→「サイトマネージャー」→「新しいサイト」を押します。</li>
+  <li>プロトコルを「SFTP - SSH File Transfer Protocol」にします。</li>
+  <li>ホストに <code>sftp.ashikanw.com</code>、ポートに <code>2022</code> を入れます。</li>
+  <li>ログオンの種類を「通常」にし、ユーザーにサーバーの ID、パスワードに APIキーを入れて「接続」を押します。</li>
+</ol>
+
+<h3 id="winscp">WinSCP</h3>
+<ol>
+  <li>「新しいサイト」で、転送プロトコルを「SFTP」にします。</li>
+  <li>ホスト名に <code>sftp.ashikanw.com</code>、ポート番号に <code>2022</code> を入れます。</li>
+  <li>ユーザー名にサーバーの ID、パスワードに APIキーを入れて「ログイン」を押します。</li>
+</ol>
+
+<h3 id="command-line">コマンドで使う</h3>
+```bash
+sftp -P 2022 1a2bc34d@sftp.ashikanw.com
+```
+<p>パスワードを聞かれたら APIキーを貼り付けます。</p>
+
+<h2 id="first-connect">初めてつなぐときの確認</h2>
+<p>初めてつなぐと、「ホスト鍵が不明です」「このサーバーを信頼しますか」と聞かれます。接続先が <code>sftp.ashikanw.com</code> で合っていれば、「OK」や「はい」で進んでください。2 回目からは聞かれません。</p>
+
+<h2 id="notes">気をつけること</h2>
+<ul>
+  <li>入れるのは、そのサーバーのフォルダの中だけです。</li>
+  <li>ディスクの上限を超えるファイルは送れません。</li>
+  <li>使わないときは SFTP をオフにしておくと安心です。オフにすると、つながっている人も 10 秒ほどで切れます。</li>
+  <li>APIキーを消すと、そのキーでは入れなくなります。</li>
+  <li>パスワードを何度も間違えると、しばらく入れなくなります。少し待ってから試してください。</li>
+</ul>
+
+<h2 id="trouble">つながらないとき</h2>
+<div class="table"><table>
+<thead><tr><th>こうなる</th><th>見るところ</th></tr></thead>
+<tbody>
+<tr><td>パスワードが違うと言われる</td><td>ログインのパスワードではなく APIキーを入れているか。ユーザー名がサーバーの ID（8 文字）になっているか。</td></tr>
+<tr><td>正しいのに入れない</td><td>そのサーバーで SFTP がオンになっているか（パネルの「ファイル」）。</td></tr>
+<tr><td>つながらない・時間切れになる</td><td>ポートが <code>2022</code> になっているか。会社や学校のネットワークでは、外への接続が止められていることがあります。</td></tr>
+</tbody></table></div>
+<p>それでもだめなときは、<a href="https://link.ashikanw.com/discord">Discord</a> で聞いてください。</p>

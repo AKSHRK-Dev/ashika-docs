@@ -1,0 +1,112 @@
+<!-- title: API の使い方 -->
+<!-- description: ASHIKA Network の API の始め方。APIキーの発行、認証、応答とエラーの形、回数の制限。 -->
+<h1>API の使い方</h1>
+<p class="lead">ASHIKA Network の API を使うと、お客様パネルでできることの一部を、プログラムから行えます。サーバーの起動・停止・再起動、コンソールへのコマンド送信、ファイルの読み書きができます。</p>
+
+<h2 id="quickstart">はじめの一歩</h2>
+<ol class="steps">
+  <li>
+    <strong>APIキーを発行する</strong>
+    <p>お客様パネルの <a href="https://dash.ashikanw.com/api-keys">「API」</a> で、名前を付けてキーを発行します。表示されたキー（<code>ashk_</code> で始まる文字列）を控えてください。もう一度見ることはできません。</p>
+  </li>
+  <li>
+    <strong>サーバーの一覧を取ってみる</strong>
+    <p>キーを <code>Authorization</code> ヘッダに入れて、サーバーの一覧を取ります。</p>
+```bash
+curl https://api.ashikanw.com/v1/servers \
+  -H "Authorization: Bearer ashk_ここにキー"
+```
+    <p>自分のサーバーの一覧が JSON で返ってくれば成功です。</p>
+  </li>
+  <li>
+    <strong>操作してみる</strong>
+    <p>一覧の <code>id</code>（8 文字）を使って、サーバーを再起動してみます。</p>
+```bash
+curl -X POST https://api.ashikanw.com/v1/servers/1a2bc34d/power \
+  -H "Authorization: Bearer ashk_ここにキー" \
+  -H "Content-Type: application/json" \
+  -d '{"signal": "restart"}'
+```
+  </li>
+</ol>
+<p>できることの全部は <a href="/api/reference/">API リファレンス</a> に、よくある使い方は <a href="/api/examples/">使い方の例</a> にあります。</p>
+
+<h2 id="base-url">URL</h2>
+<p>どのエンドポイントも、頭は次の URL です。通信は HTTPS だけです。</p>
+```text
+https://api.ashikanw.com/v1
+```
+<p>お客様パネルの <code>https://dash.ashikanw.com/api/v1</code> も、まったく同じものです。</p>
+
+<h2 id="auth">認証</h2>
+<p>すべてのリクエストに、APIキーを次の形で付けます。</p>
+```text
+Authorization: Bearer ashk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+<ul>
+  <li>触れるのは、キーを発行したアカウントのサーバーだけです。他の人のサーバーの ID を指定しても「見つかりません」になります。</li>
+  <li>キーはアカウントのパスワードと同じくらい大切です。プログラムに直接書かず、環境変数や GitHub の Secrets などに入れてください。</li>
+  <li>キーが漏れたかもしれないときは、パネルの「API」ですぐに消してください。消したキーはその場で使えなくなります。</li>
+</ul>
+
+<h2 id="servers">サーバーの指定</h2>
+<p>URL の <code>{id}</code> には、サーバーの <strong>8 文字の ID</strong>（例: <code>1a2bc34d</code>）を入れます。パネルのサーバーの URL（<code>dash.ashikanw.com/servers/…</code>）や、サーバー一覧の API の <code>id</code> で分かります。UUID でも指定できます。</p>
+
+<h2 id="responses">応答の形</h2>
+<p>うまくいったときは、HTTP の状態が <code>200</code> で、中身が <code>data</code> に入って返ります。</p>
+```json
+{
+  "data": {
+    "id": "1a2bc34d",
+    "name": "my-bot",
+    "status": "RUNNING"
+  }
+}
+```
+<p>ファイルの中身（テキストを読む・ダウンロード）だけは、JSON ではなく中身そのものが返ります。</p>
+
+<h2 id="errors">エラー</h2>
+<p>うまくいかなかったときは、HTTP の状態が 400 番台か 500 番台で、<code>error</code> に理由が入って返ります。<code>code</code> はプログラムで見分けるための英語の名前、<code>message</code> は人が読むための説明です。</p>
+```json
+{
+  "error": {
+    "code": "not_running",
+    "message": "サーバーが起動していません。"
+  }
+}
+```
+<div class="table"><table>
+<thead><tr><th>状態</th><th>code</th><th>どんなとき</th></tr></thead>
+<tbody>
+<tr><td>400</td><td><code>invalid_body</code></td><td>本文が JSON のオブジェクトになっていない</td></tr>
+<tr><td>400</td><td><code>missing_path</code></td><td>必要な <code>path</code>（または from・to・paths）が無い</td></tr>
+<tr><td>400</td><td><code>invalid_path</code></td><td>サーバーのフォルダの外を指した、フォルダを読もうとした、ディスクの上限を超える、など</td></tr>
+<tr><td>400</td><td><code>invalid_signal</code></td><td><code>signal</code> が start・stop・restart・kill のどれでもない</td></tr>
+<tr><td>400</td><td><code>invalid_command</code></td><td><code>command</code> が空、長すぎる、改行を含む</td></tr>
+<tr><td>401</td><td><code>unauthorized</code></td><td>キーが無い、間違っている、消されている</td></tr>
+<tr><td>404</td><td><code>server_not_found</code></td><td>サーバーが無い、または自分のものではない</td></tr>
+<tr><td>404</td><td><code>not_found</code></td><td>ファイル・フォルダが無い、URL が間違っている</td></tr>
+<tr><td>409</td><td><code>power_failed</code></td><td>起動や停止ができない（期限切れで止められている、準備中など）</td></tr>
+<tr><td>409</td><td><code>not_ready</code></td><td>サーバーの準備がまだ終わっていない</td></tr>
+<tr><td>409</td><td><code>not_running</code></td><td>止まっているサーバーにコマンドを送ろうとした</td></tr>
+<tr><td>413</td><td><code>too_large</code></td><td>送ったファイルが 50MB を超えている</td></tr>
+<tr><td>429</td><td><code>rate_limited</code></td><td>回数の制限を超えた</td></tr>
+<tr><td>500</td><td><code>internal_error</code></td><td>こちら側の問題。時間をおいて試し、続くようなら Discord でお知らせください</td></tr>
+</tbody></table></div>
+
+<h2 id="rate-limit">回数の制限</h2>
+<p>1 つのキーにつき、<strong>1 分間に 120 回</strong>まで受け付けます。応答のヘッダで、残りの回数が分かります。</p>
+<div class="table"><table>
+<thead><tr><th>ヘッダ</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td><code>X-RateLimit-Limit</code></td><td>1 分間に受け付ける回数（120）</td></tr>
+<tr><td><code>X-RateLimit-Remaining</code></td><td>この 1 分間の残りの回数</td></tr>
+<tr><td><code>Retry-After</code></td><td>制限を超えたとき（429）だけ。何秒待てばよいか</td></tr>
+</tbody></table></div>
+<p>状態を見張るときは、数秒〜数十秒おきに取れば十分です。</p>
+
+<h2 id="activity">操作の記録</h2>
+<p>API で行った操作（起動・停止、コマンド、ファイルの書き込み・名前の変更・削除）は、パネルのサーバーの「アクティビティ」に残ります。覚えのない操作があれば、キーを消して作り直してください。</p>
+
+<h2 id="limits">できないこと</h2>
+<p>今の API では、サーバーの購入・延長・削除、プランの変更、残高のチャージはできません。お金や消えると困るものに関わる操作は、お客様パネルから行ってください。ほしい機能があれば <a href="https://link.ashikanw.com/discord">Discord</a> で教えてください。</p>
