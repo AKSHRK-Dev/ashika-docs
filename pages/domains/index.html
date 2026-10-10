@@ -1,0 +1,38 @@
+<!-- title: 独自ドメイン -->
+<!-- description: お持ちのドメインで ASHIKA Network のサーバーの Web を公開する方法。TXT による確認、CNAME・A の向け方、うまくいかないとき。 -->
+<h1>独自ドメイン</h1>
+<p class="lead">お持ちのドメイン（例: <code>app.example.com</code>）で、サーバーの Web サイトや API を公開できます。HTTPS の証明書は自動で用意し、更新も自動です。1 台につき 3 本まで登録できます。</p>
+<p>ドメインをお持ちでない場合は、無料の <a href="/subdomains/">4l.vc のサブドメイン</a> が使えます。</p>
+
+<h2 id="flow">つながるまでの流れ</h2>
+<ol>
+  <li><strong>ドメインを追加する</strong> … お客様パネルでサーバーを開き、「独自ドメイン」のタブで、ドメインとつなぐポートを選んで追加します。</li>
+  <li><strong>持ち主であることを示す</strong> … 画面に出る TXT レコードを、お使いの DNS に追加して「確認する」を押します。ほかの方のドメインを勝手に登録できないようにするための手順です。</li>
+  <li><strong>向き先をこちらに向ける</strong> … CNAME を画面に出るホスト名に向けるか、A レコードを画面に出る IP アドレスにします。</li>
+  <li><strong>1 分ほど待つ</strong> … こちらの設定に反映され、HTTPS の証明書が自動で用意されます。</li>
+</ol>
+
+<h2 id="records">DNS の設定</h2>
+<div class="table"><table>
+<thead><tr><th>手順</th><th>種類</th><th>名前</th><th>値</th></tr></thead>
+<tbody>
+<tr><td>持ち主の確認</td><td>TXT</td><td><code>_ashika-verify.ドメイン</code></td><td><code>ashika-verify=…</code>（画面に出るもの）</td></tr>
+<tr><td>向き先（どちらか）</td><td>CNAME</td><td>ドメイン</td><td><code>edge.ashikanw.com</code></td></tr>
+<tr><td></td><td>A</td><td>ドメイン</td><td>画面に出る IP アドレス</td></tr>
+</tbody></table></div>
+<ul>
+  <li>パネルの画面にある「コピー」ボタンで、値をそのままコピーできます。</li>
+  <li>いちばん上の階層（<code>example.com</code> そのもの）には CNAME を付けられない DNS が多いので、その場合は A をお使いください。</li>
+  <li><strong>Cloudflare をお使いの場合は、プロキシ（オレンジの雲）をオフ</strong>（DNS のみ）にしてください。オンのままだと証明書を用意できません。</li>
+</ul>
+
+<h2 id="program">プログラムの待ち受け</h2>
+<p>プログラムは、選んだポートを <code>0.0.0.0</code> で待ち受け、<strong>HTTP</strong> で応えてください。HTTPS への切り替えはこちらで行います。メインのポートは環境変数 <code>SERVER_PORT</code> に入っています（<a href="/ports/#use">ポートの使い方</a>）。</p>
+
+<h2 id="trouble">うまくいかないとき</h2>
+<ul>
+  <li><strong>確認が通らない</strong> … DNS は行き渡るまで数分から数時間かかります。少し時間をおいて、もう一度お試しください。TXT の値は、前後に空白を入れずにそのまま入れてください。</li>
+  <li><strong>「設定まち」のまま</strong> … CNAME・A がこちらを向いているか確かめてください。Cloudflare のプロキシがオンだと、向いていないと判定されます。</li>
+  <li><strong>開くとエラーになる</strong> … サーバーが動いているか、プログラムが <code>0.0.0.0</code> で選んだポートを待ち受けているかを確かめてください。</li>
+  <li><strong>状態が「エラー」になった</strong> … 一度つながったあと、向き先が外れたときになります。DNS を直すと、自動で戻ります（「今すぐ確認」でもすぐ確かめられます）。</li>
+</ul>

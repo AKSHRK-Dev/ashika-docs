@@ -23,7 +23,9 @@
 <p>API からも追加できます（<a href="/api/reference/#buy-port">ポートを追加する</a>）。</p>
 
 <h2 id="use">プログラムからの使い方</h2>
-<p>メインのポートは環境変数 <code>SERVER_PORT</code> に入っていますが、追加したポートは入りません。番号をそのままプログラムや設定ファイルに書いてください。待ち受けるアドレスは <code>0.0.0.0</code> にします。</p>
+<p>外からつなぐには、プログラムが待ち受けるアドレスを <code>0.0.0.0</code> にします（<code>127.0.0.1</code> や <code>localhost</code> だと、外からつながりません）。</p>
+<p>メインのポートの番号は、環境変数 <code>SERVER_PORT</code> に入っています。よく使われる <code>PORT</code>・<code>FLASK_RUN_PORT</code>・<code>UVICORN_PORT</code> にも同じ番号が入っているので、Flask・Express・FastAPI などは何も書かなくても、そのポートで待ち受けることが多いです。</p>
+<p>追加したポートは環境変数に入りません。番号をそのままプログラムや設定ファイルに書いてください。Discord Bot のようにポートを使わないプログラムでは、この設定は要りません。</p>
 <div class="code"><button class="copy" type="button" aria-label="コピー">コピー</button><pre><code>import os
 
 web_port = int(os.environ["SERVER_PORT"])  # メイン
