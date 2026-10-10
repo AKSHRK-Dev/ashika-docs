@@ -83,12 +83,27 @@ Authorization: Bearer ashk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 <tr><td>400</td><td><code>invalid_path</code></td><td>サーバーのフォルダの外を指した、フォルダを読もうとした、ディスクの上限を超える、など</td></tr>
 <tr><td>400</td><td><code>invalid_signal</code></td><td><code>signal</code> が start・stop・restart・kill のどれでもない</td></tr>
 <tr><td>400</td><td><code>invalid_command</code></td><td><code>command</code> が空、長すぎる、改行を含む</td></tr>
+<tr><td>400</td><td><code>invalid_name</code></td><td>サブドメインやレコードの名前が使えない形</td></tr>
+<tr><td>400</td><td><code>reserved_name</code></td><td>サブドメインの名前が予約されている</td></tr>
+<tr><td>400</td><td><code>invalid_type</code> / <code>invalid_content</code></td><td>DNS レコードの種類・値が正しくない</td></tr>
+<tr><td>400</td><td><code>invalid_https</code></td><td><code>https</code> が true・false ではない</td></tr>
 <tr><td>401</td><td><code>unauthorized</code></td><td>キーが無い、間違っている、消されている</td></tr>
 <tr><td>404</td><td><code>server_not_found</code></td><td>サーバーが無い、または自分のものではない</td></tr>
+<tr><td>402</td><td><code>insufficient_balance</code></td><td>ポートを買うのに残高が足りない</td></tr>
+<tr><td>403</td><td><code>subdomains_disabled</code> / <code>dns_unavailable</code></td><td>サブドメイン・DNS レコードの受け付けを止めている</td></tr>
+<tr><td>403</td><td><code>subdomain_disabled</code></td><td>そのサブドメインは運営が止めている</td></tr>
+<tr><td>404</td><td><code>port_not_found</code> / <code>subdomain_not_found</code> / <code>record_not_found</code></td><td>ポート・サブドメイン・レコードが無い</td></tr>
 <tr><td>404</td><td><code>not_found</code></td><td>ファイル・フォルダが無い、URL が間違っている</td></tr>
 <tr><td>409</td><td><code>power_failed</code></td><td>起動や停止ができない（期限切れで止められている、準備中など）</td></tr>
 <tr><td>409</td><td><code>not_ready</code></td><td>サーバーの準備がまだ終わっていない</td></tr>
 <tr><td>409</td><td><code>not_running</code></td><td>止まっているサーバーにコマンドを送ろうとした</td></tr>
+<tr><td>409</td><td><code>suspended</code></td><td>期限切れのサーバーにポートを足そうとした</td></tr>
+<tr><td>409</td><td><code>not_removable</code></td><td>プランに付いているポートを外そうとした</td></tr>
+<tr><td>409</td><td><code>no_free_port</code></td><td>空いているポートが無い</td></tr>
+<tr><td>409</td><td><code>name_taken</code></td><td>そのサブドメインの名前はもう使われている</td></tr>
+<tr><td>409</td><td><code>limit_reached</code></td><td>サブドメイン・DNS レコードの本数の上限</td></tr>
+<tr><td>409</td><td><code>record_conflict</code></td><td>CNAME と同じ名前のレコードは一緒に置けない</td></tr>
+<tr><td>502</td><td><code>dns_error</code></td><td>DNS への登録に失敗した。時間をおいて試してください</td></tr>
 <tr><td>413</td><td><code>too_large</code></td><td>送ったファイルが 50MB を超えている</td></tr>
 <tr><td>429</td><td><code>rate_limited</code></td><td>回数の制限を超えた</td></tr>
 <tr><td>500</td><td><code>internal_error</code></td><td>こちら側の問題。時間をおいて試し、続くようなら Discord でお知らせください</td></tr>

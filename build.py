@@ -21,6 +21,7 @@ NAV = [
     ("はじめに", [("/", "ドキュメントのトップ")]),
     ("API", [("/api/", "API の使い方"), ("/api/reference/", "API リファレンス"), ("/api/examples/", "使い方の例")]),
     ("ファイル", [("/sftp/", "SFTP でつなぐ")]),
+    ("つなぎ方", [("/ports/", "ポートの追加"), ("/subdomains/", "4l.vc のサブドメイン")]),
 ]
 
 LINKS = [
@@ -46,7 +47,10 @@ SERVER_EXAMPLE = {
     "location": "大阪",
     "limits": {"memoryMb": 256, "cpuPercent": 20, "diskMb": 512},
     "address": {"ip": "node1.ashikanw.com", "port": 4012},
-    "allocations": [{"ip": "node1.ashikanw.com", "port": 4012, "primary": True, "note": ""}],
+    "allocations": [
+        {"ip": "node1.ashikanw.com", "port": 4012, "primary": True, "purchased": False, "note": ""},
+        {"ip": "node1.ashikanw.com", "port": 4057, "primary": False, "purchased": True, "note": "追加ポート"},
+    ],
     "sftpEnabled": False,
     "supported": False,
     "expiresAt": "2026-11-06T12:00:00.000Z",
@@ -62,6 +66,22 @@ RESOURCES_EXAMPLE = {
 }
 
 ID_PARAM = ("id", "パス", "サーバーの ID。パネルの URL やサーバー一覧に出る 8 文字（例: 1a2bc34d）か、UUID。")
+
+PORT_EXAMPLE = {"ip": "node1.ashikanw.com", "port": 4057, "primary": False, "purchased": True, "note": "追加ポート"}
+SUB_EXAMPLE = {
+    "id": "clx9sub001",
+    "name": "myserver",
+    "hostname": "myserver.4l.vc",
+    "port": 4012,
+    "https": False,
+    "status": "active",
+    "minecraftSrv": True,
+    "records": [{"id": "clx9rec001", "type": "TXT", "name": "myserver.4l.vc", "content": "hello", "createdAt": "2026-10-10T12:00:00.000Z"}],
+    "createdAt": "2026-10-10T12:00:00.000Z",
+}
+SUB_PARAM = ("name", "パス", "サブドメインの名前（myserver）。myserver.4l.vc のような完全な名前や、サブドメインの id でも指定できます。")
+AUTH = '-H "Authorization: Bearer $ASHIKA_API_KEY"'
+JSON_H = '-H "Content-Type: application/json"'
 
 ENDPOINTS = [
     {
@@ -216,6 +236,139 @@ ENDPOINTS = [
             },
         ],
     },
+    {
+        "group": "ポート",
+        "note": "ポートの追加は残高から払います。1個の月額は下の「ポートの一覧」の pricePerMonthYen で分かります。買ったときは今の期限までの日割り（purchaseNowYen）を払い、そのあとは期限を延長するたびにプラン料金と一緒に払います。ポートを足したり外したりすると、反映のためサーバーを作り直します（動いていれば自動で起動し直します。ファイルは消えません）。",
+        "items": [
+            {
+                "id": "list-ports",
+                "method": "GET",
+                "path": "/servers/{id}/ports",
+                "title": "ポートの一覧と料金",
+                "desc": "サーバーのポートのすべてと、追加するときの料金を返します。purchased が true のものが、追加で買ったポートです。",
+                "params": [ID_PARAM],
+                "curl": f'curl {API_BASE}/servers/1a2bc34d/ports \\\n  {AUTH}',
+                "response": {"data": {"pricePerMonthYen": 10, "purchaseNowYen": 9, "expiresAt": "2026-11-06T12:00:00.000Z", "ports": SERVER_EXAMPLE["allocations"]}},
+            },
+            {
+                "id": "buy-port",
+                "method": "POST",
+                "path": "/servers/{id}/ports",
+                "title": "ポートを追加する",
+                "desc": "ポートを1個買います。番号は空いているものから選ばれます。本文は要りません。残高が足りなければ 402（insufficient_balance）を返します。",
+                "params": [ID_PARAM],
+                "curl": f'curl -X POST {API_BASE}/servers/1a2bc34d/ports \\\n  {AUTH}',
+                "response": {"data": {"port": PORT_EXAMPLE, "chargedYen": 9, "balanceYen": 291, "message": "ポート 4057 を追加しました（¥9）。サーバーを作り直して、起動し直しました。"}},
+            },
+            {
+                "id": "release-port",
+                "method": "DELETE",
+                "path": "/servers/{id}/ports/{port}",
+                "title": "ポートを外す",
+                "desc": "追加で買ったポートを外します。プランに付いているポートは外せません（409）。返金はなく、次の延長から料金に入らなくなります。このポートにつないでいたサブドメイン・独自ドメインも消えます。",
+                "params": [ID_PARAM, ("port", "パス", "外すポートの番号。")],
+                "curl": f'curl -X DELETE {API_BASE}/servers/1a2bc34d/ports/4057 \\\n  {AUTH}',
+                "response": {"data": {"port": 4057, "released": True, "message": "ポート 4057 を外しました。次の延長から料金に入りません。"}},
+            },
+        ],
+    },
+    {
+        "group": "サブドメイン",
+        "note": "「名前.4l.vc」で、サーバーのポートにつなげます。無料で、1台につき作れる本数に上限があります（一覧の maxPerServer）。名前は英小文字・数字・ハイフンで 3〜32 文字。予約されている名前は使えません（reserved_name）。",
+        "items": [
+            {
+                "id": "list-subdomains",
+                "method": "GET",
+                "path": "/servers/{id}/subdomains",
+                "title": "サブドメインの一覧",
+                "desc": "サーバーのサブドメインを、作った順に返します。",
+                "params": [ID_PARAM],
+                "curl": f'curl {API_BASE}/servers/1a2bc34d/subdomains \\\n  {AUTH}',
+                "response": {"data": {"zone": "4l.vc", "enabled": True, "maxPerServer": 3, "subdomains": [SUB_EXAMPLE]}},
+            },
+            {
+                "id": "create-subdomain",
+                "method": "POST",
+                "path": "/servers/{id}/subdomains",
+                "title": "サブドメインを作る",
+                "desc": "サブドメインを作り、すぐに使える状態にします（201）。DNS が行き渡るまで数分かかることがあります。",
+                "params": [
+                    ID_PARAM,
+                    ("name", "本文", "使う名前（myserver）。"),
+                    ("port", "本文", "つなぐポートの番号。省略するとメインのポート。"),
+                    ("https", "本文", "自動 HTTPS を使うか。省略すると false。Web を公開するときだけ true に。"),
+                ],
+                "curl": f'curl -X POST {API_BASE}/servers/1a2bc34d/subdomains \\\n  {AUTH} \\\n  {JSON_H} \\\n  -d \'{{"name": "myserver", "https": false}}\'',
+                "response": {"data": {**SUB_EXAMPLE, "records": []}},
+            },
+            {
+                "id": "get-subdomain",
+                "method": "GET",
+                "path": "/servers/{id}/subdomains/{name}",
+                "title": "サブドメインを見る",
+                "desc": "サブドメイン1つと、足した DNS レコードを返します。",
+                "params": [ID_PARAM, SUB_PARAM],
+                "curl": f'curl {API_BASE}/servers/1a2bc34d/subdomains/myserver \\\n  {AUTH}',
+                "response": {"data": SUB_EXAMPLE},
+            },
+            {
+                "id": "update-subdomain",
+                "method": "PATCH",
+                "path": "/servers/{id}/subdomains/{name}",
+                "title": "自動 HTTPS の入り切り",
+                "desc": "自動 HTTPS を入れたり切ったりします。入れると 1 分ほどで https://名前.4l.vc が使えるようになります（証明書は最初のアクセスのときに取ります）。",
+                "params": [ID_PARAM, SUB_PARAM, ("https", "本文", "true で入れる、false で切る。")],
+                "curl": f'curl -X PATCH {API_BASE}/servers/1a2bc34d/subdomains/myserver \\\n  {AUTH} \\\n  {JSON_H} \\\n  -d \'{{"https": true}}\'',
+                "response": {"data": {**SUB_EXAMPLE, "https": True}},
+            },
+            {
+                "id": "delete-subdomain",
+                "method": "DELETE",
+                "path": "/servers/{id}/subdomains/{name}",
+                "title": "サブドメインを消す",
+                "desc": "サブドメインを消します。足した DNS レコードも消えます。同じ名前は、ほかの方が取れるようになります。",
+                "params": [ID_PARAM, SUB_PARAM],
+                "curl": f'curl -X DELETE {API_BASE}/servers/1a2bc34d/subdomains/myserver \\\n  {AUTH}',
+                "response": {"data": {"hostname": "myserver.4l.vc", "deleted": True}},
+            },
+            {
+                "id": "list-records",
+                "method": "GET",
+                "path": "/servers/{id}/subdomains/{name}/records",
+                "title": "DNS レコードの一覧",
+                "desc": "サブドメインに足した DNS レコードを返します。こちらが自動で作る A・SRV は含みません。",
+                "params": [ID_PARAM, SUB_PARAM],
+                "curl": f'curl {API_BASE}/servers/1a2bc34d/subdomains/myserver/records \\\n  {AUTH}',
+                "response": {"data": {"hostname": "myserver.4l.vc", "records": SUB_EXAMPLE["records"]}},
+            },
+            {
+                "id": "add-record",
+                "method": "POST",
+                "path": "/servers/{id}/subdomains/{name}/records",
+                "title": "DNS レコードを足す",
+                "desc": "TXT・CNAME・A・AAAA を足します（201）。サブドメインそのもの（name を省略）には TXT だけ付けられます。CNAME・A・AAAA は、その下の名前（www など）に付けます。1つのサブドメインにつき 20 件まで。",
+                "params": [
+                    ID_PARAM,
+                    SUB_PARAM,
+                    ("type", "本文", "TXT・CNAME・A・AAAA のどれか。"),
+                    ("name", "本文", "サブドメインから見た名前（_acme-challenge、www など）。省略するとサブドメインそのもの。"),
+                    ("content", "本文", "値。"),
+                ],
+                "curl": f'curl -X POST {API_BASE}/servers/1a2bc34d/subdomains/myserver/records \\\n  {AUTH} \\\n  {JSON_H} \\\n  -d \'{{"type": "TXT", "name": "_acme-challenge", "content": "abc123"}}\'',
+                "response": {"data": {"id": "clx9rec002", "type": "TXT", "name": "_acme-challenge.myserver.4l.vc", "content": "abc123", "createdAt": "2026-10-10T12:00:00.000Z"}},
+            },
+            {
+                "id": "delete-record",
+                "method": "DELETE",
+                "path": "/servers/{id}/subdomains/{name}/records/{recordId}",
+                "title": "DNS レコードを消す",
+                "desc": "足した DNS レコードを1つ消します。",
+                "params": [ID_PARAM, SUB_PARAM, ("recordId", "パス", "レコードの id。")],
+                "curl": f'curl -X DELETE {API_BASE}/servers/1a2bc34d/subdomains/myserver/records/clx9rec002 \\\n  {AUTH}',
+                "response": {"data": {"id": "clx9rec002", "deleted": True}},
+            },
+        ],
+    },
 ]
 
 
@@ -248,7 +401,7 @@ APIキーを <code>Authorization: Bearer</code> ヘッダに入れて送りま�
     parts.append(f'<h2 id="endpoints">エンドポイントの一覧</h2><div class="table"><table class="list"><thead><tr><th>メソッド</th><th>パス</th><th>内容</th></tr></thead><tbody>{"".join(rows)}</tbody></table></div>')
 
     for group in ENDPOINTS:
-        gid = {"アカウント": "account", "サーバー": "servers", "ファイル": "files"}[group["group"]]
+        gid = {"アカウント": "account", "サーバー": "servers", "ファイル": "files", "ポート": "ports", "サブドメイン": "subdomains"}[group["group"]]
         parts.append(f'<h2 id="{gid}">{e(group["group"])}</h2>')
         if group.get("note"):
             parts.append(f'<p>{e(group["note"])}</p>')
@@ -283,12 +436,30 @@ APIキーを <code>Authorization: Bearer</code> ヘッダに入れて送りま�
 <tr><td><code>location</code></td><td>置いてある場所。</td></tr>
 <tr><td><code>limits</code></td><td>メモリ（MB）・CPU（%。100 で 1 コア分）・ディスク（MB）の上限。</td></tr>
 <tr><td><code>address</code></td><td>外からつなぐときの接続先（<code>ip</code> と <code>port</code>）。</td></tr>
-<tr><td><code>allocations</code></td><td>割り当てられたポートのすべて。</td></tr>
+<tr><td><code>allocations</code></td><td>割り当てられたポートのすべて（下の「ポート」の形）。</td></tr>
 <tr><td><code>sftpEnabled</code></td><td>SFTP がオンか。</td></tr>
 <tr><td><code>supported</code></td><td>支援プログラムのサーバーか。</td></tr>
 <tr><td><code>expiresAt</code></td><td>期限（ISO 8601）。</td></tr>
 <tr><td><code>createdAt</code></td><td>作った日時（ISO 8601）。</td></tr>
 <tr><td><code>resources</code></td><td>「サーバーを見る」だけ。動いているときの使用量。止まっていれば null。</td></tr>
+</tbody></table></div>
+<h3 id="port-object">ポート</h3>
+<div class="table"><table class="params"><thead><tr><th>名前</th><th>説明</th></tr></thead><tbody>
+<tr><td><code>ip</code> / <code>port</code></td><td>外からつなぐときの接続先。</td></tr>
+<tr><td><code>primary</code></td><td>メインのポートか（環境変数 <code>SERVER_PORT</code> に入る番号）。</td></tr>
+<tr><td><code>purchased</code></td><td>追加で買ったポートか。true のものは外せて、延長のたびに月額がかかります。</td></tr>
+<tr><td><code>note</code></td><td>メモ。</td></tr>
+</tbody></table></div>
+<h3 id="subdomain-object">サブドメイン</h3>
+<div class="table"><table class="params"><thead><tr><th>名前</th><th>説明</th></tr></thead><tbody>
+<tr><td><code>id</code></td><td>サブドメインの id。</td></tr>
+<tr><td><code>name</code> / <code>hostname</code></td><td>名前（myserver）と完全な名前（myserver.4l.vc）。</td></tr>
+<tr><td><code>port</code></td><td>つないでいるポート。<code>hostname:port</code> でつながります。</td></tr>
+<tr><td><code>https</code></td><td>自動 HTTPS がオンか。</td></tr>
+<tr><td><code>status</code></td><td><code>active</code>（使える）か <code>disabled</code>（運営が止めている）。</td></tr>
+<tr><td><code>minecraftSrv</code></td><td>Minecraft (Java版) 用の SRV レコードがあるか。true ならポートなしの <code>hostname</code> だけでつながります。</td></tr>
+<tr><td><code>records</code></td><td>足した DNS レコード（<code>id</code>・<code>type</code>・<code>name</code>・<code>content</code>・<code>createdAt</code>）。</td></tr>
+<tr><td><code>createdAt</code></td><td>作った日時（ISO 8601）。</td></tr>
 </tbody></table></div>
 <h3 id="status">状態（status）</h3>
 <div class="table"><table class="params"><thead><tr><th>値</th><th>意味</th></tr></thead><tbody>

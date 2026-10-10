@@ -1,0 +1,57 @@
+<!-- title: 4l.vc のサブドメイン -->
+<!-- description: 「好きな名前.4l.vc」で ASHIKA Network のサーバーにつなぐ方法。自動 HTTPS、Minecraft の SRV、DNS レコードの追加。 -->
+<h1>4l.vc のサブドメイン</h1>
+<p class="lead">「<code>myserver.4l.vc</code>」のような、覚えやすい名前でサーバーにつなげます。ドメインを買わなくても使え、<strong>無料</strong>です。1 台につき 3 本まで作れます。</p>
+
+<h2 id="create">作り方</h2>
+<ol>
+  <li>お客様パネルでサーバーを開き、<strong>「ドメイン」</strong>を開きます。</li>
+  <li>「4l.vc のサブドメイン」に好きな名前を入れ、つなぐポートを選びます。</li>
+  <li>Web を公開するときだけ「自動 HTTPS を使う」にチェックを入れて、「サブドメインを作る」を押します。</li>
+</ol>
+<p>すぐに使える状態になります。DNS が行き渡るまで数分かかることがあります。</p>
+
+<h3 id="names">使える名前</h3>
+<ul>
+  <li>英小文字・数字・ハイフン（<code>-</code>）で 3〜32 文字。ハイフンは最初と最後には使えません。</li>
+  <li>早い者勝ちです。消すと、ほかの方が取れるようになります。</li>
+  <li><code>www</code>・<code>api</code>・<code>admin</code> など、一部の名前は予約されていて使えません。</li>
+  <li>他の方や団体になりすます名前、紛らわしい名前は、運営の判断で止めることがあります。</li>
+</ul>
+
+<h2 id="connect">つなぎ方</h2>
+<div class="table"><table>
+<thead><tr><th>使い方</th><th>接続先</th></tr></thead>
+<tbody>
+<tr><td>ふつう（ゲーム・Bot の Web 画面など）</td><td><code>myserver.4l.vc:ポート番号</code></td></tr>
+<tr><td>Minecraft（Java版）</td><td><code>myserver.4l.vc</code>（ポートは要りません）</td></tr>
+<tr><td>Web（自動 HTTPS をオンにしたとき）</td><td><code>https://myserver.4l.vc</code></td></tr>
+</tbody></table></div>
+<p>Minecraft（Java版）は、サブドメインを作ると SRV レコードが自動で作られるので、ポートを付けずにつながります。統合版（Bedrock）は SRV に対応していないので、ポート番号を付けてください。</p>
+
+<h2 id="https">自動 HTTPS</h2>
+<p>オンにすると、<code>https://名前.4l.vc</code> で Web サイトや API を公開できます。証明書は最初のアクセスのときに自動で取り、期限の前に自動で更新します。</p>
+<ul>
+  <li>プログラムは、選んだポートを <code>0.0.0.0</code> で待ち受け、<strong>HTTP</strong> で応えてください（HTTPS への切り替えはこちらで行います）。</li>
+  <li>ゲームサーバーや Bot だけなら、オフのままで構いません。オン・オフは「ドメイン」の画面からいつでも切り替えられます。</li>
+</ul>
+
+<h2 id="records">DNS レコードを足す</h2>
+<p>自分のサブドメインと、その下の名前に DNS レコードを足せます。メールの送信元の確認（SPF）や、証明書の取得（<code>_acme-challenge</code>）、別のサービスへの向き先などに使えます。</p>
+<div class="table"><table>
+<thead><tr><th>種類</th><th>付けられる名前</th><th>値の例</th></tr></thead>
+<tbody>
+<tr><td>TXT</td><td>サブドメインそのもの、またはその下</td><td><code>v=spf1 -all</code></td></tr>
+<tr><td>CNAME</td><td>その下の名前だけ（例: <code>www.myserver.4l.vc</code>）</td><td><code>example.github.io</code></td></tr>
+<tr><td>A</td><td>その下の名前だけ</td><td><code>203.0.113.10</code></td></tr>
+<tr><td>AAAA</td><td>その下の名前だけ</td><td><code>2001:db8::10</code></td></tr>
+</tbody></table></div>
+<p>サブドメインそのもの（<code>myserver.4l.vc</code>）の A レコードは、サーバーにつなぐために使っているので変えられません。1 つのサブドメインにつき 20 件まで足せます。</p>
+<p>「ドメイン」の画面で、サブドメインの「DNS レコード」を押すと、足したり消したりできます。API からも操作できます（<a href="/api/reference/#subdomains">サブドメイン</a>）。</p>
+
+<h2 id="trouble">うまくいかないとき</h2>
+<ul>
+  <li><strong>つながらない</strong> … サーバーが動いているか、プログラムが <code>0.0.0.0</code> で、選んだポートを待ち受けているかを確かめてください。</li>
+  <li><strong>名前が見つからないと言われる</strong> … 作った直後は、DNS が行き渡るまで数分かかることがあります。</li>
+  <li><strong>https:// で開けない</strong> … 自動 HTTPS がオンになっているか、プログラムが HTTP で応えているかを確かめてください。オンにした直後は 1 分ほどかかります。</li>
+</ul>
